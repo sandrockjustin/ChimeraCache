@@ -14,7 +14,7 @@ class Cache {
 	* }?} options
 	* @returns {Cache} A new cache; immediately begins executing subroutines for cache invalidation.
 	*/
-	constructor(options){
+	constructor(options = {}){
 		this.milliseconds = options.milliseconds ? options.milliseconds : 900000;
 		this.constraint = options.constraint ? options.constraint : 900000;
 		this.manifest = options.manifest ? options.manifest : {"createdAt": new Date()};
@@ -180,7 +180,9 @@ class Cache {
 }
 
 
-export default Cache;
+localCache = new Cache();
+
+module.exports = Cache;
 
 
 
