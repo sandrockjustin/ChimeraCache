@@ -3,26 +3,30 @@ const path = require('path')
 
 class Cache {
 
-	/**
-	 * Creates a new Cache and manifest. Immediately begins executing cache invalidation subroutines, and makes other utilities available to your server.
-	 *
-	 * @param {number} milliseconds - The time (in milliseconds) that cache invalidation subroutines and manifest preservation should occur on an interval.
-	 * @param {number} constraints - The time (in milliseconds) that it takes for a cached item to expire.
-	 * @param {string} manifest - A record of each query (and its respective data) that has been saved; includes the original date that the data was cached. Optionally, you may provide a manifest override.
-	 * @param {object} dirname - An optional path configuration for your cache to be created.
-	 * @returns {object} A new cache; immediately begins executing subroutines for cache invalidation.
-	 */
-	constructor(milliseconds = 900000, constraints = 900000, manifest = null, dirname = null){
-		this.manifest = manifest ? manifest : {"createdAt": new Date()};
-		this.path = dirname ? dirname : path.resolve();
+/**
+ 	* Creates a new Cache and manifest. Immediately begins executing cache invalidation subroutines, and makes other utilities available to your server.
+ 	*
+	* @param {{
+	*   dirname?: string
+	*   manifest?: object
+	*   milliseconds?: number
+	*   constraint?: number
+	* }?} options
+	* @returns {Cache} A new cache; immediately begins executing subroutines for cache invalidation.
+	*/
+	constructor(options){
+		this.milliseconds = options.milliseconds ? options.milliseconds : 900000;
+		this.constraint = options.constraint ? options.constraint : 900000;
+		this.manifest = options.manifest ? options.manifest : {"createdAt": new Date()};
+		this.path = options.dirname ? options.dirname : path.resolve();
 		this.subroutine = null;
 		this.init().then(() => {
-			if (milliseconds === 900000 && constraints === 900000) {
+			if (this.milliseconds === 900000 && this.constraint === 900000) {
 				console.log(`→ Starting cache invalidation subroutines with DEFAULT parameters (15 minutes).`)
 			} else {
-				console.log(`→ Starting cache invalidation subroutines with CUSTOM parameters (${milliseconds}ms, ${constraints}ms).`)
+				console.log(`→ Starting cache invalidation subroutines with CUSTOM parameters (${this.milliseconds}ms, ${this.constraint}ms).`)
 			}
-			this.startSubroutines(milliseconds, constraints);
+			this.startSubroutines(this.milliseconds, this.constraint);
 		})
 	}
 
