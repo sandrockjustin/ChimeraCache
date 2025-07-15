@@ -92,7 +92,7 @@ class Cache {
 	}
 	
 	/**
-	 * Stops ongoing Cache.subroutine interval, which is responsible for cache invalidation.
+	 * Stops ongoing cache invalidation subroutine.
 	 */
 	stopSubroutines() {
 		if (this.subroutine) {
@@ -169,8 +169,7 @@ class Cache {
 }
 
 
-//export default Cache;
+export default Cache;
 
-localCache = new Cache();
 
 
