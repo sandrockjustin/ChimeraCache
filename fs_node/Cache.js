@@ -131,16 +131,23 @@ class Cache {
 	 * Searches local cache for a file sharing the same name as your query. Optionally creates a file, if provided with a callback that returns data.
 	 *
 	 * @param {string} query - The query that you are searching for in the cache.
+	 * @param {boolean} refresh - Should we refresh this cache's lifespan?
 	 * @param {function} callback - The callback function to execute if the item is not found in your cache. This function should execute a database pull and return it.
 	 * @param {array} arguments - An array of arguments to pass off to your callback, if necessary.
 	 * @returns {object|null} A parsed object for fulfilling server GET requests, or null if not found.
 	 */
-	async fetch(query, cb = null, cbArgs = []) {
+	async fetch(query, refresh = false, cb = null, cbArgs = []) {
 		try {
 
 			const data = await fs.readFile(`${this.path}/cache/storage/${query}.json`);
 
-			if (data) {
+			if (refresh && data) {
+
+				this.manifest[query] = Date.now();
+				console.log(`→ Extended lifespan for query '${query}'.`);
+				return JSON.parse(data);
+
+			} else if (data) {
 				return JSON.parse(data);
 			}
 
