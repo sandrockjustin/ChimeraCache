@@ -84,14 +84,9 @@ class CacheElement {
   }
 }
 
-const myCache = new Cache();
 
-myCache.create('hotdogs', {good: true});
+export default Cache;
 
-myCache.startSubroutines(2000, 1000);
-
-setTimeout(() => myCache.stopSubroutines(), 5000);
-
-myCache.create('hamburger', {good: true});
-
-setTimeout(() => myCache.create('test', {good: true}), 6500);
+/*
+module.exports = Cache;
+*/
