@@ -161,7 +161,7 @@ class Cache {
 
 			if (cb) {
 				console.log(`→ Executing callback function for a database pull.`);
-				const dbPull = cb(...cbArgs);
+				const dbPull = await cb(...cbArgs);
 
 				if (dbPull) {
 					this.create(query, dbPull);
