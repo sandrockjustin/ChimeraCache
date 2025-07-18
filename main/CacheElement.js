@@ -7,7 +7,7 @@ class CacheElement {
     this.last_accessed = Date.now();
     this.engagement = 1;
     this.data = options.data;
-    this.path = options.path ? options.path : null;
+    this.method = options.method ? options.method : null;
   }
 
   // updates engagement for cache item, shows how recently accessed for LRU

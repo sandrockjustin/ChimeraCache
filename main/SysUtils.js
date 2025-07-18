@@ -52,7 +52,7 @@ class SystemUtils {
         cached_bytes: caching_bytes_used,
         cached_ratio: caching_to_sys_ratio_used,
         sys_mem_usage: this.#sys_mem_usage,
-        heap_mem_usage: (process.memoryUsage.heapUsed()/this.#sys_mem)
+        heap_mem_usage: (process.memoryUsage().heapUsed/this.#sys_mem)
       }
     } catch (error) {
       console.error(error);
