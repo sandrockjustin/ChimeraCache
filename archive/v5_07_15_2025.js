@@ -281,64 +281,7 @@ class CacheEntry {
   }
 }
 
-
-(async function main() {
-
-  try {
-
-    const Cache = new ChimeraCache(
-      {
-        logging: {
-        console: true,
-        files: {
-          error: true,
-          generic: true
-        }
-      }
-    });
-
-    let x = 0;
-    while (x <= 9999999999) {
-      x++;
-    }
-
-    await Promise.all([
-      Cache.set('my/playful/doggo', { test: true, doggo: true }),
-      Cache.set('my/playful/doggo', { test: true, doggo: true }),
-      Cache.set('my/playful/doggo', { test: true, doggo: true }),
-      Cache.set('my/playful/doggo', { test: true, doggo: true }),
-      Cache.set('my/playful/doggo', { test: true, doggo: true }),
-      Cache.set('my/cool/cat', { test: true, cat: 'cool' }),
-      Cache.set('weather/sunny/beach', { temperature: 85, mood: 'happy', sunscreen: true }),
-      Cache.set('games/pixel-adventure', { level: 3, lives: 5, hasSword: false }),
-      Cache.set('food/pizza/friday', { toppings: ['pepperoni', 'mushroom'], slicesLeft: 2 }),
-      Cache.set('robot/assistant/stats', { uptime: '4h 12m', active: true, tasksCompleted: 27 })
-    ]);
-    
-
-    async function test(x, y, z) {
-      try {
-        return {
-          dog: x,
-          cat: y,
-          elephant: z
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    }
-
-    const genericGet = await Cache.get('my/cool/cat');
-
-    const foreignCallback = await Cache.get('qoiweoidaxjk1893aklsdjkqwei', test, ['bark', {}, 'meow']);
-
-  } catch(error) {
-    console.error(error);
-  }
-
-})()
-
-//module.exports = ChimeraCache;
+module.exports = ChimeraCache;
 
 
 
