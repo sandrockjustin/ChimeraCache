@@ -1,5 +1,4 @@
-class ChimeraCache {
-
+class Interrogator {
 
   constructor() {
     
