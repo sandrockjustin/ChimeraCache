@@ -219,6 +219,8 @@ class ChimeraCache {
           return null;
         }
 
+      } else {
+        return null;
       }
 
     } catch (error) {
