@@ -189,6 +189,13 @@ class ChimeraCache {
         } else if (callback && args) {
           this.#log(2, `Initiating foreign callback with arguments ${args.join(', ')} for entry '${entry}'.`);
           this.get(key, callback, args);
+
+        /**
+         * If no callback && args, we have no means to set() data so we have nothing.
+         * This case would activate if you are trying to read the file, but it gets deleted as the read tries to go through.
+         */
+        } else {
+          return null;
         }
 
       // if the item is already being cached, do not double-up on requests, and wait instead
@@ -219,6 +226,7 @@ class ChimeraCache {
           return null;
         }
 
+      // else, item does not exist and we have not been provided with means to set() it
       } else {
         return null;
       }
