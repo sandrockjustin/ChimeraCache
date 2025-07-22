@@ -242,6 +242,11 @@ class Enforcer {
     }
   }
 
+  /**
+   * Enforces a limit on the maximum amount of items allowed in the cache. If an item exceeds the
+   * established limit, the declared culling protocol will be used. The Enforcer passes this down 
+   * to the Interrogator architecture for use in interrogations.
+   */
   async enforce_limits(){
     if (this.#caching.limit.enabled) {
 
