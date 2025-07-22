@@ -23,10 +23,33 @@ class Enforcer {
 
 
     if (overrides) this.#overrides = overrides;
-    if (foreign) this.#foreign = foreign;
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback;
     if (ttl) this.#ttl = ttl;
+
+    if (foreign) {
+      this.#foreign.enabled = foreign.enabled ? foreign.enabled : true,
+      this.#foreign.cache = foreign.enabled ? [] : null,
+      this.#foreign.set = async (entry, data) => {
+        try {
+          this.#foreign.cache.push(entry);
+          await foreign.set(entry, data);
+          return null;
+        } catch (error) {
+          console.error(error);
+          return error;
+        }
+      }
+      this.#foreign.get = async (entry) => {
+        try {
+          const data = await foreign.get(entry);
+          return data;
+        } catch (error) {
+          console.error(error);
+          return error;
+        }
+      }
+    }
 
     this.#CCINT = new Interrogator({caching, fallback});
   }
