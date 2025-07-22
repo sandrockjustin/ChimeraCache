@@ -23,7 +23,7 @@ class Enforcer {
 
 
     if (overrides) this.#overrides = overrides;
-    if (foreign_cache) this.#foreign = foreign;
+    if (foreign) this.#foreign = foreign;
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback;
     if (ttl) this.#ttl = ttl;
@@ -256,3 +256,5 @@ class Enforcer {
   }
 
 }
+
+module.exports = Enforcer;
