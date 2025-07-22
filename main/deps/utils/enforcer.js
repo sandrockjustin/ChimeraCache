@@ -3,7 +3,11 @@ const fs = require('node:fs/promises');
 const Entry = require('../Entry');
 
 /**
- * The Enforcer architecture is the executor of ChimeraCache.
+ * Instances a new Enforcer. The Enforcer architecture is the executor of ChimeraCache; it houses the Cache
+ * and controls what data may enter or exit. The Enforcer is assisted by the Interrogator and Oracle architectures
+ * to make informed decisions regarding caching constraint violations, the enforcement of fallback protocols, and
+ * system performance. In addition to housing the Cache, the Enforcer maintains a TTL invalidation subroutine if
+ * this setting is enabled.
  */
 class Enforcer {
 
@@ -110,7 +114,7 @@ class Enforcer {
     } else if (this.cache[entry]) {
       this.cache[entry].update();
       return this.cache[entry].data;
-    } else if (this.#foreign.cache.includes(entry)) {
+    } else if (this.#foreign.enabled && this.#foreign.cache.includes(entry)) {
       const data = await this.#foreign.get(entry);
 
       if (data) {
@@ -120,7 +124,6 @@ class Enforcer {
         this.#foreign.cache.splice(index, 1);
         return null;
       }
-
     } else {
       return null;
     }
