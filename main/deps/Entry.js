@@ -19,6 +19,7 @@ class Entry {
   update() {
     this.last_accessed = Date.now();
     this.engagement++;
+    if (this.#extend_by) this.expires_at += this.#extend_by;
   }
 
 }
