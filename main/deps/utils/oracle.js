@@ -17,9 +17,6 @@ class Oracle {
   #monitoring = {
     active: false,
     subroutine: null,
-    duration: 30000,
-    samples: 5,
-    delay: 30000
   };
 
   #chimera = {
@@ -34,7 +31,12 @@ class Oracle {
    * The Oracle object is instanced by the Interrogator of ChimeraCache; it is responsible for
    * performance metrics including fallback, overflow, and bytesize evaluations. 
    */
-  constructor() {
+  constructor(monitoring) {
+
+    const {duration, samples, delay} = monitoring;
+    this.#monitoring.duration = duration ? duration : 30000;
+    this.#monitoring.samples = samples ? samples : 5;
+    this.#monitoring.delay = delay ? delay : 30000;
 
     const total = os.totalmem();
     const unallocated = os.freemem();
