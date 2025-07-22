@@ -2,6 +2,9 @@ const Interrogator = require('./interrogator');
 const fs = require('node:fs/promises');
 const Entry = require('../Entry');
 
+/**
+ * The Enforcer architecture is the executor of ChimeraCache.
+ */
 class Enforcer {
 
   cache;
@@ -75,9 +78,15 @@ class Enforcer {
     clearInterval(this.#ttl_subroutine);
   }
 
+  /**
+   * Invalidates (deletes) data from the Cache; does not work for a foreign cache.
+   * @param {*} entry - The key designating which piece of data must be removed.
+   * @returns true
+   */
   async invalidate(entry) {
     try {
       await this.#invalidate_nvm(entry);
+      return true;
     } catch (error) {
       console.error(error);
       return error;
