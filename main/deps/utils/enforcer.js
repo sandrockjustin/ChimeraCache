@@ -93,11 +93,20 @@ class Enforcer {
     }
   }
 
+  /**
+   * Attempts to retrieve data stored under the Cache entry. If the entry is found in the Cache VM, 
+   * this will automatically update the entry's engagement metrics as well as when the entry was last 
+   * accessed. Similar updates are performed if the entry was found to be stored in Cache NVM with the
+   * only difference being that this involves JSON parsing. If 'foreign' is enabled, then attempts will
+   * also be made to access foreign Cache. Finally, if no data is found, then this will return null.
+   * @param {*} entry - The Cache key that data should be stored under.
+   * @returns data | null
+   */
   async get(entry) {
     if (this.cache[entry] && this.cache[entry].method) {
       const data = await fs.readFile(`${this.#overrides.path}/cache/${entry}.json`);
       this.cache[entry].update();
-      return data;
+      return JSON.parse(data);
     } else if (this.cache[entry]) {
       this.cache[entry].update();
       return this.cache[entry].data;
@@ -117,6 +126,12 @@ class Enforcer {
     }
   }
 
+  /**
+   * 
+   * @param {*} entry - The key under which a new Entry() should be instanced.
+   * @param {*} data - The data to store in either VM / NVM.
+   * @returns 
+   */
   async set(entry, data) {
     try {
       const report = await this.#CCINT.audit();
@@ -229,7 +244,7 @@ class Enforcer {
         await this.#foreign.set(entry, data);
         this.#foreign.cache.push(entry);
       } else {
-        await fs.writeFile(`${this.#overrides.path}/cache/${entry}.json`, data);
+        await fs.writeFile(`${this.#overrides.path}/cache/${entry}.json`, JSON.stringify(data));
         this.cache[entry] = new Entry({
           method,
           ttl: this.#ttl
