@@ -12,7 +12,7 @@ const Entry = require('../Entry');
 class Enforcer {
 
   cache;
-  #foreign; // object → {enabled: true, cache: [], get: () => {}, set: () => {}}
+  #foreign;
 
   #overrides
   #caching;
@@ -28,13 +28,13 @@ class Enforcer {
 
     this.cache = cache; // must point to main cache from parent
 
-
     if (overrides) this.#overrides = overrides;
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback;
     if (ttl) this.#ttl = ttl;
 
     if (foreign) {
+      this.#foreign = {};
       this.#foreign.enabled = foreign.enabled ? foreign.enabled : true,
       this.#foreign.cache = foreign.enabled ? [] : null,
       this.#foreign.set = async (entry, data) => {
