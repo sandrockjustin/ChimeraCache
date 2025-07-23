@@ -22,8 +22,15 @@ class Interrogator {
     
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback; // intended to be an object containing [system, process, chimera] objects as well as a protocol object {policy (native overrides like Orphan/Wayne/Foreign/Flex), recover (true/false), interval, delay}
+  }
 
-    this.free = this.#CCORC.free; // reverse inheritance, sounds stupid but I don't want other classes to have unnecessary access to Oracle
+  async free(bytes) {
+    try {
+      this.#CCORC.free(bytes);
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
   }
 
   async audit() {
