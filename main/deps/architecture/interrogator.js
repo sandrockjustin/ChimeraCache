@@ -75,7 +75,7 @@ class Interrogator {
 
     try {
       const report = await this.#CCORC.performance_monitoring(true);
-      const {system, process, chimera} = this.#fallback;
+      const {system = null, process = null, chimera = null} = this.#fallback;
 
 
       /**
