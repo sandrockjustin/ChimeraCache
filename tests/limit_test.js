@@ -1,15 +1,81 @@
 const ChimeraCache = require('../main/ChimeraCache');
+const path = require('node:path');
 
 (async function main(){
 
-  const Cache = new ChimeraCache();
-
-  function randomInterval() {
-    return Math.floor(Math.random() * 10000);
+  const config = {
+    overrides: {
+      path: path.resolve(),
+      ignore_defaults: true,
+      parsing: true,
+      manifest: false
+    },
+    caching: {
+      overflow: true,
+      bytes: {
+        size: {
+          enabled: false,
+          max: 0,
+          min: 0
+        },
+        ratio: {
+          enabled: true,
+          max: 0.15,
+          min: 0
+        }
+      },
+      limit: {
+        enabled: true,
+        protocol: 'last_accessed',
+        max: 3,
+        min: 0
+      }
+    },
+    ttl: {
+      enabled: false,
+      extend_by: 8000,
+      interval: 1000,
+      max: 10000,
+      min: 4000
+    },
+    fallback: {
+      enabled: true,
+      manifest: false,
+      thresholds: {
+        system: {
+          enabled: true,
+          max: 0.85,
+          min: 0.7
+        },
+        process: {
+          enabled: true,
+          max: 0.8,
+          min: 0.6
+        },
+        chimera: {
+          system: {
+            enabled: true,
+            max: 0.75,
+            min: 0.5
+          },
+          process: {
+            enabled: true,
+            max: 0.15,
+            min: 0.01
+          }
+        }
+      },
+      monitoring: {
+        duration: 10000,
+        samples: 5,
+        delay: 10000
+      }
+    }
   }
 
+  const Cache = new ChimeraCache(config);
 
-  const data = {
+  const dummy_data = {
       "users": [
         {
           "id": 1,
@@ -104,23 +170,21 @@ const ChimeraCache = require('../main/ChimeraCache');
         "timestamp": "2025-07-23T14:00:00Z",
         "server": "api.example.com"
       }
-    };
-  
-  
-  setInterval(() => {
+  };
 
-    setInterval(() => {
-      Cache.set(`${Math.floor(Math.random() * 9999999)}`, data);
-    }, randomInterval());
+  await Cache.set('1', dummy_data);
+  await Cache.set('2', dummy_data);
+  await Cache.set('3', dummy_data);
+  await Cache.set('4', dummy_data);
+  await Cache.set('5', dummy_data);
+  await Cache.set('6', dummy_data);
 
-    setInterval(() => {
-      Cache.set(`${Math.floor(Math.random() * 9999999)}`, data);
-    }, randomInterval())
+  const responses = [
+    await Cache.get('1'),
+    await Cache.get('2'),
+    await Cache.get('3'),
+    await Cache.get('4')
+  ];
 
-    setInterval(() => {
-      Cache.set(`${Math.floor(Math.random() * 9999999)}`, data);
-    }, randomInterval())
-
-  }, 5000)
-
+  responses.forEach((response) => console.log(response));
 })()
