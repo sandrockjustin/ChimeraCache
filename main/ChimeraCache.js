@@ -7,21 +7,39 @@ class ChimeraCache {
 
   #version = `ChimeraCache v6`;
   #config;
-  #foreign;
   #CCENF;
 
 
-  constructor(config = {overrides: {}, caching: {}, ttl: {}, fallback: {}}, foreign = {}) {
+  constructor(config = null, foreign = null) {
     this.#init(config, foreign);
-    this.#CCENF = new Enforcer(config);
+    this.#CCENF = new Enforcer(this.#config);
   }
 
   #init(config = null, foreign = null) {
 
     if (config && config.overrides && config.overrides.ignore_defaults) {
       this.#config = config;
+
+      if (foreign) {
+        this.#config.foreign = {
+          enabled: foreign.enabled,
+          cache: [],
+          get: foreign.get,
+          set: foreign.set
+        };
+      } else {
+        this.#config.foreign = {
+          enabled: false,
+          cache: null,
+          get: null,
+          set: null
+        };
+      }
+
       return; 
     }
+
+    this.#config = {overrides: {}, caching: {}, ttl: {}, fallback: {}};
 
     const overrides = {
       path: path.resolve(),
@@ -102,10 +120,16 @@ class ChimeraCache {
     }
 
     if (foreign) {
-      this.#foreign = foreign;
+      this.#config.foreign = {
+        enabled: foreign.enabled,
+        cache: [],
+        get: foreign.get,
+        set: foreign.set
+      };
     } else {
-      this.#foreign = {
+      this.#config.foreign = {
         enabled: false,
+        cache: null,
         get: null,
         set: null
       };
@@ -116,7 +140,7 @@ class ChimeraCache {
 
   async get(entry) {
     try {
-      const response = await this.#CCENF(sanitize(entry));
+      const response = await this.#CCENF.get(sanitize(entry));
       return response;
     } catch (error) {
       console.error(error);
@@ -126,7 +150,7 @@ class ChimeraCache {
 
   async set(entry, data) {
     try {
-      await this.#CCENF(sanitize(entry), data);
+      await this.#CCENF.set(sanitize(entry), data);
       return null;
     } catch (error) {
       console.error(error);
