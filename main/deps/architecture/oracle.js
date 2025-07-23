@@ -58,6 +58,10 @@ class Oracle {
     }
   }
 
+  #debug() {
+    console.log(`System Usage: (${(this.#system.usage * 100).toFixed(2)})% Chimera System Usage: (${(this.#chimera.system_usage * 100).toFixed(2)})% || Process Usage: (${(this.#process.system_usage * 100).toFixed(2)})% Chimera Process Usage: (${(this.#chimera.process_usage * 100).toFixed(2)})%`);
+  }
+
   /**
    * Updates all values associated with ChimeraCache's performance metrics.
    */
@@ -78,6 +82,7 @@ class Oracle {
     this.#process.system_usage = this.#process.rss / this.#system.total;
     this.#chimera.system_usage = this.#chimera.allocated / this.#system.total;
     this.#chimera.process_usage = this.#chimera.allocated / this.#process.rss;
+    //this.#debug();
   }
 
   /**
@@ -155,24 +160,19 @@ class Oracle {
   async performance_monitoring(routine = true) {
 
     try {
-
       if (this.#monitoring.active) return null;
+
       this.#update();
-  
+      
       const metrics = [{
         system: this.#system,
         process: this.#process,
         chimera: this.#chimera
       }];
-  
-      if (routine = true) {
-        return metrics[0];
-      }
-  
+      
+      if (routine) return metrics[0];
+      
       this.#monitoring.active = true;
-  
-      const samples = this.#monitoring.samples;
-      const interval = this.#monitoring.duration / samples;
   
       await new Promise((resolve, reject) => {
         let collected = 0; 
@@ -187,7 +187,7 @@ class Oracle {
             });
             collected++;
   
-            if (collected >= samples) {
+            if (collected >= (samples - 1)) {
               clearInterval(this.#monitoring.subroutine);
               resolve();
             }
@@ -195,7 +195,7 @@ class Oracle {
             clearInterval(this.#monitoring.subroutine);
             reject(err);
           }
-        }, interval);
+        }, this.#monitoring.duration);
       });
   
       const average = metrics.reduce((accum, curr) => {
