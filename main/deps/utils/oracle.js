@@ -128,12 +128,12 @@ class Oracle {
       bytes: data
     }
 
-    if (bytes && bytes.size.enabled) {
+    if (bytes && bytes.size && bytes.size.enabled) {
       if (data >= bytes.size.max) report.overflow = true;
       if (data < bytes.size.min) report.underflow = true;
     }
 
-    if (bytes && bytes.ratio.enabled) {
+    if (bytes && bytes.ratio && bytes.ratio.enabled) {
       if ((data/this.#system.total) >= bytes.ratio.max) report.overflow = true;
       if ((data/this.#system.total) < bytes.ratio.min) report.underflow = true;
     }
