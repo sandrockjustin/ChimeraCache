@@ -49,11 +49,14 @@ class Interrogator {
         this.#CCORC.allocate(report.bytes);
         return report.bytes;                  // we return this for Enforcer to update Cache item with in VM
       
-      } else if (report.overflow) {           // this comes first, because if overflow AND underflow detected then overflow has higher priority and always will
+      } else if (report.overflow && !this.#caching.overflow) {           
+        invalidate();        
+      } else if (report.overflow) {           // this comes before report.underflow, because if overflow AND underflow detected then overflow has higher priority and always will
 
         await enforce_limits();
         invalidate();
         return true;                          // return true to indicate that Enforcer must handle an overflow
+        
       } else if (report.underflow) {
         invalidate();                         // if underflow, invalidate(), because if a developer doesn't care about underflow it is set to 0
       }
