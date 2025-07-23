@@ -296,10 +296,10 @@ class Enforcer {
         const current_size = Object.keys(this.cache).length;
   
         // if the current size exceeds the caching limit
-        if (current_size >= this.#caching.limit.max) {
+        if (current_size > this.#caching.limit.max) {
   
           // get the protocol that we will use for culling
-          const protocol = this.#caching.constraints.limit.protocol;
+          const protocol = this.#caching.limit.protocol;
   
           let cull = {};            // instance a cull baseline protocol
           let target_key;           // save the key that we need to cull
@@ -328,7 +328,7 @@ class Enforcer {
             }
           }
   
-          this.invalidate(key);
+          await this.invalidate(target_key);
           this.enforce_limits(); // call again, in the event that the removal of one was not enough to maintain limit
         }
       }
