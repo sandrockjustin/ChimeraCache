@@ -13,7 +13,6 @@ class Interrogator {
   #fallback;
   #activated = false;
   #pending = false;
-  #interval;
 
   constructor(options = {}) {
     const {caching = null, fallback = null} = options;
@@ -39,7 +38,7 @@ class Interrogator {
     try {
       
       await this.#diagnostics();                            // before we add anything, check performance
-      const {cache, invalidate, enforce_limits, args} = options;
+      const {cache, invalidate, enforce_limits} = options;
       const baseline = process.memoryUsage().heapUsed;
   
       cache();
@@ -88,12 +87,15 @@ class Interrogator {
        * has a conflicting internal state of active. After the setTimeout(), diagnostics will execute again. If
        * the diagnostics return all clear, we begin recovering.
        */
+      
+      console.log(report);
+
       if (this.#pending) return false;
 
       const major_violation = (system.enabled && (report.system.usage >= system.max)) ||
         (process.enabled && (report.process.system_usage >= process.max)) ||
         ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.max)) ||
-        ((chimera.system && chimera.system.enabled) && (report.chimera.process_usage >= chimera.process.max));
+        ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.max));
 
       // if we are at or beyond max, signal immediately that we must activate and enforce fallback policy.
       if (major_violation) {
@@ -104,7 +106,7 @@ class Interrogator {
       const minor_violation = (system.enabled && (report.system.usage >= system.min)) ||
         (process.enabled && (report.process.system_usage >= process.min)) ||
         ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.min)) ||
-        ((chimera.system && chimera.system.enabled) && (report.chimera.process_usage >= chimera.process.min));
+        ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.min));
 
       if (minor_violation){
         this.#pending = true;
