@@ -39,7 +39,7 @@ class Interrogator {
     try {
       
       await this.#diagnostics();                            // before we add anything, check performance
-      const {cache, invalidate, enforce_limits} = options;
+      const {cache, invalidate, enforce_limits, args} = options;
       const baseline = process.memoryUsage().heapUsed;
   
       cache();
@@ -75,8 +75,7 @@ class Interrogator {
 
     try {
       const report = await this.#CCORC.performance_monitoring(true);
-      const {system = null, process = null, chimera = null} = this.#fallback;
-
+      const {system = null, process = null, chimera = null} = this.#fallback.thresholds;
 
       /**
        * If this item is pending, we return false to say that we should keep going as normal. If the diagnostics
