@@ -109,25 +109,33 @@ class Enforcer {
    * @returns data | null
    */
   async get(entry) {
-    if (this.cache[entry] && this.cache[entry].method) {
-      const data = await fs.readFile(`${this.#overrides.path}/cache/storage/${entry}.json`);
-      this.cache[entry].update();
-      return JSON.parse(data);
-    } else if (this.cache[entry]) {
-      this.cache[entry].update();
-      return this.cache[entry].data;
-    } else if (this.#foreign.enabled && this.#foreign.cache.includes(entry)) {
-      const data = await this.#foreign.get(entry);
+    try {
+      if (this.cache[entry] && this.cache[entry].method) {
+        const data = await fs.readFile(`${this.#overrides.path}/cache/storage/${entry}.json`);
+        this.cache[entry].update();
 
-      if (data) {
-        return data;
+        if (!this.#overrides.parsing) return data;
+        return JSON.parse(data);
+        
+      } else if (this.cache[entry]) {
+        this.cache[entry].update();
+        return this.cache[entry].data;
+      } else if (this.#foreign.enabled && this.#foreign.cache.includes(entry)) {
+        const data = await this.#foreign.get(entry);
+  
+        if (data) {
+          return data;
+        } else {
+          const index = this.#foreign.cache.indexOf(entry);
+          this.#foreign.cache.splice(index, 1);
+          return null;
+        }
       } else {
-        const index = this.#foreign.cache.indexOf(entry);
-        this.#foreign.cache.splice(index, 1);
         return null;
       }
-    } else {
-      return null;
+    } catch (error) {
+      console.error(error);
+      return error;
     }
   }
 
@@ -139,11 +147,10 @@ class Enforcer {
    */
   async set(entry, data) {
     try {
-
       const report = await this.#CCINT.audit();
       if (report.activated) this.#activated = true;
-
       await this.#set_vm(entry, data);
+      return true;
     } catch (error) {
       console.error(error);
       return error;
@@ -195,42 +202,49 @@ class Enforcer {
    * @param {*} data - The data to store in either VM / NVM.
    */
   async #set_vm(entry, data) {
-    
-    // if fallback protocol has not been activated
-    if (!this.#activated) {
-
-      // Options package to enable the Interrogator to perform its duties.
-      const options = {
-        cache: () => { 
-          this.cache[entry] = new Entry({
-          data, ttl: {
-            enabled: this.#ttl.enabled,
-            max: this.#ttl.max,
-            min: this.#ttl.min,
-            extend_by: this.#ttl.extend_by,
-          }
-        })},
-        invalidate: () => { 
-          delete this.cache[entry] 
-        },
-        enforce_limits: this.enforce_limits.bind(this)
+    try {
+      // if fallback protocol has not been activated
+      if (!this.#activated) {
+  
+        // Options package to enable the Interrogator to perform its duties.
+        const options = {
+          cache: () => { 
+            this.cache[entry] = new Entry({
+            data, ttl: {
+              enabled: this.#ttl.enabled,
+              max: this.#ttl.max,
+              min: this.#ttl.min,
+              extend_by: this.#ttl.extend_by,
+            }
+          })},
+          invalidate: () => { 
+            delete this.cache[entry] 
+          },
+          enforce_limits: this.enforce_limits.bind(this)
+        }
+  
+        const result = await this.#CCINT.interrogate(options);
+  
+        // if result returned bytes, we update bytes and just keep in VM
+        if (result.bytes) this.cache[item].bytes = result.bytes;
+  
+        // if result returned true, overflow has occurred and we must write to NVM
+        if (result === true && this.#caching.overflow) {
+          await this.#set_nvm(entry, data, 'overflow');
+          return true;
+        }
+  
+        // if result returned false, implied else do nothing because underflow
+        return true;
+      // if fallback protocol has been activated
+      } else {
+        this.#set_nvm(entry, data, 'fallback');
+        return true;
       }
 
-      const result = await this.#CCINT.interrogate(options);
-
-      // if result returned bytes, we update bytes and just keep in VM
-      if (result.bytes) this.cache[item].bytes = result.bytes;
-
-      // if result returned true, overflow has occurred and we must write to NVM
-      if (result === true && this.#caching.overflow) {
-        await this.#set_nvm(entry, data, 'overflow');
-      }
-
-      // if result returned false, implied else do nothing because underflow
-    
-    // if fallback protocol has been activated
-    } else {
-      this.#set_nvm(entry, data, 'fallback');
+    } catch (error) {
+      console.error(error);
+      return error;
     }
   }
 
@@ -249,12 +263,14 @@ class Enforcer {
       if (this.#foreign && this.#foreign.enabled) {
         await this.#foreign.set(entry, data);
         this.#foreign.cache.push(entry);
+        return true;
       } else {
         await fs.writeFile(`${this.#overrides.path}/cache/storage/${entry}.json`, JSON.stringify(data));
         this.cache[entry] = new Entry({
           method: method,
           ttl: this.#ttl
         })
+        return true;
       }
 
     } catch (error) {
@@ -268,48 +284,54 @@ class Enforcer {
    * established limit, the declared culling protocol will be used. The Enforcer passes this down 
    * to the Interrogator architecture for use in interrogations.
    */
-  async enforce_limits(){
-    if (this.#caching.limit.enabled) {
+  async enforce_limits() {
+    try {
 
-      // get the current size of our cache
-      const current_size = Object.keys(this.cache).length;
-
-      // if the current size exceeds the caching limit
-      if (current_size >= this.#caching.limit.max) {
-
-        // get the protocol that we will use for culling
-        const protocol = this.#caching.constraints.limit.protocol;
-
-        let cull = {};            // instance a cull baseline protocol
-        let target_key;           // save the key that we need to cull
-        let satisfies_conditions; // retain a conditions callback
-
-        /**
-         * Switch receives a protocol, and determines what conditional must be used for culling.
-         * Additionally, determines what the cull baseline should contain.
-         */
-        switch(protocol) {
-          case 'engagement':
-            cull[protocol] = 9999999999999;
-            satisfies_conditions = (curr, accum) => (curr <= accum)
-            break;
-          default:
-            cull[protocol] = Date.now();
-            satisfies_conditions = (curr, accum) => (curr <= accum)
-            break;
-        }
-
-        // Apply the limit protocol and enforce limits
-        for (const key in this.cache) {
-          if (satisfies_conditions(this.cache[key][protocol], cull[protocol])) {
-            cull = this.cache[key][protocol];
-            target_key = key;
+      if (this.#caching.limit.enabled) {
+  
+        // get the current size of our cache
+        const current_size = Object.keys(this.cache).length;
+  
+        // if the current size exceeds the caching limit
+        if (current_size >= this.#caching.limit.max) {
+  
+          // get the protocol that we will use for culling
+          const protocol = this.#caching.constraints.limit.protocol;
+  
+          let cull = {};            // instance a cull baseline protocol
+          let target_key;           // save the key that we need to cull
+          let satisfies_conditions; // retain a conditions callback
+  
+          /**
+           * Switch receives a protocol, and determines what conditional must be used for culling.
+           * Additionally, determines what the cull baseline should contain.
+           */
+          switch(protocol) {
+            case 'engagement':
+              cull[protocol] = 9999999999999;
+              satisfies_conditions = (curr, accum) => (curr <= accum)
+              break;
+            default:
+              cull[protocol] = Date.now();
+              satisfies_conditions = (curr, accum) => (curr <= accum)
+              break;
           }
+  
+          // Apply the limit protocol and enforce limits
+          for (const key in this.cache) {
+            if (satisfies_conditions(this.cache[key][protocol], cull[protocol])) {
+              cull = this.cache[key][protocol];
+              target_key = key;
+            }
+          }
+  
+          this.invalidate(key);
+          this.enforce_limits(); // call again, in the event that the removal of one was not enough to maintain limit
         }
-
-        this.invalidate(key);
-        this.enforce_limits(); // call again, in the event that the removal of one was not enough to maintain limit
       }
+    } catch (error) {
+      console.error(error);
+      return error;
     }
   }
 
