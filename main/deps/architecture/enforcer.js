@@ -59,6 +59,7 @@ class Enforcer {
     }
 
     this.#CCINT = new Interrogator({caching, fallback});
+    this.init_ttl();
   }
 
   /**
