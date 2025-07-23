@@ -1,39 +1,36 @@
 const merger = require('./deps/utils/merger');
+const sanitize = require('./deps/utils/sanitize');
 const path = require('node:path');
+const Enforcer = require('./deps/architecture/enforcer');
 
 class ChimeraCache {
 
   #version = `ChimeraCache v6`;
   #config;
+  #CCENF;
 
 
-  constructor(config = null, foreign) {
-
-    
-    if (!config) {
-      this.#load_defaults();
-    } else if (!config.overrides || !config.overrides.preserve_defaults) {
-      this.#config = config;
-    } else {
-      const {overrides = null, caching = null, ttl = null, fallback = null} = config;
-      this.#load_defaults();
-
-      const merged = merger(config);
-      console.log(merged);
-      this.#config = merged;
-    }
-
+  constructor(config = {overrides: {}, caching: {}, ttl: {}, fallback: {}}, foreign = {}) {
+    this.#init();
+    this.#CCENF = new Enforcer(config);
   }
 
-  #load_defaults() {
+  #init(config = null) {
+
+    if (config && config.overrides && config.overrides.ignore_defaults) {
+      this.#config = config;
+      return; 
+    }
 
     const overrides = {
       path: path.resolve(),
-      preserve_defaults: false,
-      disable_parsing: false
+      ignore_defaults: true,
+      parsing: true,
+      manifest: false
     }
 
     const caching = {
+      overflow: true,
       bytes: {
         size: {
           enabled: false,
@@ -41,7 +38,7 @@ class ChimeraCache {
           min: 0
         },
         ratio: {
-          enabled: false,
+          enabled: true,
           max: 0,
           min: 0
         }
@@ -64,6 +61,7 @@ class ChimeraCache {
 
     const fallback = {
       enabled: true,
+      manifest: false,
       thresholds: {
         system: {
           enabled: false,
@@ -100,17 +98,35 @@ class ChimeraCache {
       }
     };
 
-    return {overrides, caching, ttl, fallback};
+    this.#config = {overrides, caching, ttl, fallback};
+
+    if (config) {
+      const merged = merger(this.#config, config);
+      this.#config = merged;
+    }
+
+    return;
   }
 
+  async get(entry) {
+    try {
+      const response = await this.#CCENF(sanitize(entry));
+      return response;
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
+  }
 
+  async set(entry, data) {
+    try {
+      await this.#CCENF(sanitize(entry), data);
+      return null;
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
+  }
 }
 
-const Cache = new ChimeraCache({
-  overrides: {
-    preserve_defaults: true,
-  },
-  caching: null,
-  ttl: null,
-  fallback: null,
-});
+module.exports = ChimeraCache;
