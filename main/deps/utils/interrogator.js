@@ -1,5 +1,4 @@
 const Oracle = require('./oracle');
-const merger = require('./merger');
 
 /**
  * Instances a new Interrogator. The Interrogator (Auditor) architecture is responsible for conducting 
