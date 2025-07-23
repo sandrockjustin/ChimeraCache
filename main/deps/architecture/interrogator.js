@@ -8,7 +8,7 @@ const Oracle = require('./oracle');
  */
 class Interrogator {
 
-  #CCORC = new Oracle();
+  #CCORC;
   #caching;
   #fallback;
   #activated = false;
@@ -17,6 +17,9 @@ class Interrogator {
 
   constructor(options = {}) {
     const {caching = null, fallback = null} = options;
+    const monitoring = fallback.monitoring;
+
+    this.#CCORC = new Oracle({caching, monitoring});
     
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback; // intended to be an object containing [system, process, chimera] objects as well as a protocol object {policy (native overrides like Orphan/Wayne/Foreign/Flex), recover (true/false), interval, delay}
