@@ -65,6 +65,7 @@ class Enforcer {
    * Starts TTL invalidation subroutine on the interval that has been defined in configuration.
    */
   init_ttl() {
+    if (!this.#ttl.enabled) return null;
     this.#ttl_subroutine = setInterval(() => {
       for (const entry in this.cache) {
         if (
@@ -72,7 +73,7 @@ class Enforcer {
           this.cache[entry].expires_at_max <= Date.now()
         ) this.invalidate();
       }
-    }, interval)
+    }, this.#ttl.interval)
   }
 
   /**
