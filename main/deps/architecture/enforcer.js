@@ -26,14 +26,14 @@ class Enforcer {
   constructor(options = {}) {
     const {caching = null, fallback = null, ttl = null, cache = null, foreign = null, overrides = null} = options;
 
-    this.cache = cache; // must point to main cache from parent
+    this.cache = {};
 
     if (overrides) this.#overrides = overrides;
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback;
     if (ttl) this.#ttl = ttl;
 
-    if (foreign) {
+    if (foreign && foreign.enabled) {
       this.#foreign = {};
       this.#foreign.enabled = foreign.enabled ? foreign.enabled : true,
       this.#foreign.cache = foreign.enabled ? [] : null,
@@ -58,7 +58,7 @@ class Enforcer {
       }
     }
 
-    this.#CCINT = new Interrogator({caching, fallback});
+    this.#CCINT = new Interrogator({caching: this.#caching, fallback: this.#fallback});
     this.init_ttl();
   }
 
@@ -212,7 +212,7 @@ class Enforcer {
         invalidate: () => { 
           delete this.cache[entry] 
         },
-        enforce_limits: this.enforce_limits
+        enforce_limits: this.enforce_limits.bind(this)
       }
 
       const result = await this.#CCINT.interrogate(options);
@@ -245,7 +245,7 @@ class Enforcer {
   async #set_nvm(entry, data, method) {
     try {
 
-      if (this.#foreign.enabled) {
+      if (this.#foreign && this.#foreign.enabled) {
         await this.#foreign.set(entry, data);
         this.#foreign.cache.push(entry);
       } else {
