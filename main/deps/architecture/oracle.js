@@ -117,28 +117,34 @@ class Oracle {
    */
   async audit(options = {}) {
 
-    const latest = process.memoryUsage().heapUsed;
-    const {baseline = null, caching = null} = options;
-    const {bytes = null} = caching;
-    const data = latest - baseline;
+    try {
 
-    const report = {
-      underflow: false,
-      overflow: false,
-      bytes: data
+      const latest = process.memoryUsage().heapUsed;
+      const {baseline = null, caching = null} = options;
+      const {bytes = null} = caching;
+      const data = latest - baseline;
+  
+      const report = {
+        underflow: false,
+        overflow: false,
+        bytes: data
+      }
+  
+      if (bytes && bytes.size && bytes.size.enabled) {
+        if (data >= bytes.size.max) report.overflow = true;
+        if (data < bytes.size.min) report.underflow = true;
+      }
+  
+      if (bytes && bytes.ratio && bytes.ratio.enabled) {
+        if ((data/this.#system.total) >= bytes.ratio.max) report.overflow = true;
+        if ((data/this.#system.total) < bytes.ratio.min) report.underflow = true;
+      }
+  
+      return report;
+    } catch (error) {
+      console.error(error);
+      return error;
     }
-
-    if (bytes && bytes.size && bytes.size.enabled) {
-      if (data >= bytes.size.max) report.overflow = true;
-      if (data < bytes.size.min) report.underflow = true;
-    }
-
-    if (bytes && bytes.ratio && bytes.ratio.enabled) {
-      if ((data/this.#system.total) >= bytes.ratio.max) report.overflow = true;
-      if ((data/this.#system.total) < bytes.ratio.min) report.underflow = true;
-    }
-
-    return report;
   }
 
   /**
@@ -148,86 +154,88 @@ class Oracle {
    */
   async performance_monitoring(routine = true) {
 
-    if (this.#monitoring.active) return null;
+    try {
 
-    this.#update();
-
-    const metrics = [{
-      system: this.#system,
-      process: this.#process,
-      chimera: this.#chimera
-    }];
-
-    if (routine = true) {
-      return metrics[0];
-    }
-
-    this.#monitoring.active = true;
-
-
-    console.log(metrics[0]);
-
-    const samples = this.#monitoring.samples;
-    const interval = this.#monitoring.duration / samples;
-
-    await new Promise((resolve, reject) => {
-      let collected = 0; 
-
-      this.#monitoring.subroutine = setInterval(async () => {
-        try {
-          await this.#update();
-          metrics.push({
-            system: this.#system,
-            process: this.#process,
-            chimera: this.#chimera
-          });
-          collected++;
-
-          if (collected >= samples) {
-            clearInterval(this.#monitoring.subroutine);
-            resolve();
-          }
-        } catch (err) {
-          clearInterval(this.#monitoring.subroutine);
-          reject(err);
-        }
-      }, interval);
-    });
-
-    const average = metrics.reduce((accum, curr) => {
-      return {
-        system: {
-          unallocated: accum.system.unallocated + curr.system.unallocated,
-          allocated: accum.system.allocated + curr.system.allocated,
-          usage: accum.system.usage + curr.system.usage
-        },
-        process: {
-          rss: accum.process.rss + curr.process.rss,
-          system_usage: accum.process.system_usage + curr.process.system_usage
-        }, 
-        chimera: {
-          allocated: accum.chimera.allocated + curr.chimera.allocated,
-          system_usage: accum.chimera.system_usage + curr.chimera.system_usage,
-          process_usage: accum.chimera.process_usage + curr.chimera.process_usage
-        }       
+      if (this.#monitoring.active) return null;
+      this.#update();
+  
+      const metrics = [{
+        system: this.#system,
+        process: this.#process,
+        chimera: this.#chimera
+      }];
+  
+      if (routine = true) {
+        return metrics[0];
       }
-    })
-
-    average.system.unallocated /= metrics.length;
-    average.system.allocated /= metrics.length;
-    average.system.usage /= metrics.length;
-    average.process.rss /= metrics.length;
-    average.process.system_usage /= metrics.length;
-    average.chimera.allocated /= metrics.length;
-    average.chimera.system_usage /= metrics.length;
-    average.chimera.process_usage /= metrics.length;
-
-    setTimeout(() => {
-      this.#monitoring.active = false;
-    }, this.#monitoring.delay);
-
-    return average;
-
+  
+      this.#monitoring.active = true;
+  
+      const samples = this.#monitoring.samples;
+      const interval = this.#monitoring.duration / samples;
+  
+      await new Promise((resolve, reject) => {
+        let collected = 0; 
+  
+        this.#monitoring.subroutine = setInterval(async () => {
+          try {
+            await this.#update();
+            metrics.push({
+              system: this.#system,
+              process: this.#process,
+              chimera: this.#chimera
+            });
+            collected++;
+  
+            if (collected >= samples) {
+              clearInterval(this.#monitoring.subroutine);
+              resolve();
+            }
+          } catch (err) {
+            clearInterval(this.#monitoring.subroutine);
+            reject(err);
+          }
+        }, interval);
+      });
+  
+      const average = metrics.reduce((accum, curr) => {
+        return {
+          system: {
+            unallocated: accum.system.unallocated + curr.system.unallocated,
+            allocated: accum.system.allocated + curr.system.allocated,
+            usage: accum.system.usage + curr.system.usage
+          },
+          process: {
+            rss: accum.process.rss + curr.process.rss,
+            system_usage: accum.process.system_usage + curr.process.system_usage
+          }, 
+          chimera: {
+            allocated: accum.chimera.allocated + curr.chimera.allocated,
+            system_usage: accum.chimera.system_usage + curr.chimera.system_usage,
+            process_usage: accum.chimera.process_usage + curr.chimera.process_usage
+          }       
+        }
+      })
+  
+      average.system.unallocated /= metrics.length;
+      average.system.allocated /= metrics.length;
+      average.system.usage /= metrics.length;
+      average.process.rss /= metrics.length;
+      average.process.system_usage /= metrics.length;
+      average.chimera.allocated /= metrics.length;
+      average.chimera.system_usage /= metrics.length;
+      average.chimera.process_usage /= metrics.length;
+  
+      setTimeout(() => {
+        this.#monitoring.active = false;
+      }, this.#monitoring.delay);
+  
+      return average;
+  
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
   }
 
 }
