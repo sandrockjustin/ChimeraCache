@@ -56,6 +56,9 @@ class Enforcer {
           return error;
         }
       }
+    } else {
+      this.#foreign = {};
+      this.#foreign.enabled = false;
     }
 
     this.#CCINT = new Interrogator({caching: this.#caching, fallback: this.#fallback});
