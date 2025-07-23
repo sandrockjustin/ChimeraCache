@@ -52,7 +52,8 @@ class Interrogator {
         return report.bytes;                  // we return this for Enforcer to update Cache item with in VM
       
       } else if (report.overflow && !this.#caching.overflow) {           
-        invalidate();        
+        invalidate();
+        return false;        
       } else if (report.overflow) {           // this comes before report.underflow, because if overflow AND underflow detected then overflow has higher priority and always will
 
         await enforce_limits();
@@ -61,6 +62,7 @@ class Interrogator {
         
       } else if (report.underflow) {
         invalidate();                         // if underflow, invalidate(), because if a developer doesn't care about underflow it is set to 0
+        return false;
       }
 
     } catch (error) {
@@ -87,8 +89,6 @@ class Interrogator {
        * has a conflicting internal state of active. After the setTimeout(), diagnostics will execute again. If
        * the diagnostics return all clear, we begin recovering.
        */
-      
-      console.log(report);
 
       if (this.#pending) return false;
 
