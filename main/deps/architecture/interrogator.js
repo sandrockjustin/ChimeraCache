@@ -18,7 +18,7 @@ class Interrogator {
     const {caching = null, fallback = null} = options;
     const monitoring = fallback.monitoring;
 
-    this.#CCORC = new Oracle({caching, monitoring});
+    this.#CCORC = new Oracle({monitoring});
     
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback; // intended to be an object containing [system, process, chimera] objects as well as a protocol object {policy (native overrides like Orphan/Wayne/Foreign/Flex), recover (true/false), interval, delay}
@@ -89,8 +89,8 @@ class Interrogator {
        * has a conflicting internal state of active. After the setTimeout(), diagnostics will execute again. If
        * the diagnostics return all clear, we begin recovering.
        */
+      if (this.#pending || !report) return false;
 
-      if (this.#pending) return false;
 
       const major_violation = (system.enabled && (report.system.usage >= system.max)) ||
         (process.enabled && (report.process.system_usage >= process.max)) ||
@@ -108,15 +108,16 @@ class Interrogator {
         ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.min)) ||
         ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.min));
 
-      if (minor_violation){
+      if (minor_violation) {
+
         this.#pending = true;
-        const interrogate = await this.#CCORC.performance_monitoring(false);
-        const {system, process, chimera} = interrogate;
+        const report = await this.#CCORC.performance_monitoring(false);
+        const {system = null, process = null, chimera = null} = this.#fallback.thresholds;
 
         const persistent_violation = (system.enabled && (report.system.usage >= system.min)) ||
         (process.enabled && (report.process.system_usage >= process.min)) ||
         ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.min)) ||
-        ((chimera.system && chimera.system.enabled) && (report.chimera.process_usage >= chimera.process.min)); 
+        ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.min));
 
         if (persistent_violation) {
           this.#activated = true;
