@@ -7,15 +7,16 @@ class ChimeraCache {
 
   #version = `ChimeraCache v6`;
   #config;
+  #foreign;
   #CCENF;
 
 
   constructor(config = {overrides: {}, caching: {}, ttl: {}, fallback: {}}, foreign = {}) {
-    this.#init();
+    this.#init(config, foreign);
     this.#CCENF = new Enforcer(config);
   }
 
-  #init(config = null) {
+  #init(config = null, foreign = null) {
 
     if (config && config.overrides && config.overrides.ignore_defaults) {
       this.#config = config;
@@ -64,20 +65,20 @@ class ChimeraCache {
       manifest: false,
       thresholds: {
         system: {
-          enabled: false,
-          max: 0,
-          min: 0
+          enabled: true,
+          max: 0.85,
+          min: 0.7
         },
         process: {
-          enabled: false,
-          max: 0,
-          min: 0
+          enabled: true,
+          max: 0.8,
+          min: 0.6
         },
         chimera: {
           system: {
-            enabled: false,
-            max: 0,
-            min: 0
+            enabled: true,
+            max: 0.75,
+            min: 0.5
           },
           process: {
             enabled: false,
@@ -87,14 +88,9 @@ class ChimeraCache {
         }
       },
       monitoring: {
-        duration: 0,
-        samples: 0,
-        delay: 0
-      },
-      foreign: {
-        enabled: false,
-        get: null,
-        set: null
+        duration: 30000,
+        samples: 5,
+        delay: 30000
       }
     };
 
@@ -103,6 +99,16 @@ class ChimeraCache {
     if (config) {
       const merged = merger(this.#config, config);
       this.#config = merged;
+    }
+
+    if (foreign) {
+      this.#foreign = foreign;
+    } else {
+      this.#foreign = {
+        enabled: false,
+        get: null,
+        set: null
+      };
     }
 
     return;
