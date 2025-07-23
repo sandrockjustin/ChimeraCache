@@ -72,7 +72,7 @@ class Enforcer {
         if (
           this.cache[entry].expires_at <= Date.now() ||
           this.cache[entry].expires_at_max <= Date.now()
-        ) this.invalidate();
+        ) this.invalidate(entry);
       }
     }, this.#ttl.interval)
   }
@@ -110,7 +110,7 @@ class Enforcer {
    */
   async get(entry) {
     if (this.cache[entry] && this.cache[entry].method) {
-      const data = await fs.readFile(`${this.#overrides.path}/cache/${entry}.json`);
+      const data = await fs.readFile(`${this.#overrides.path}/cache/storage/${entry}.json`);
       this.cache[entry].update();
       return JSON.parse(data);
     } else if (this.cache[entry]) {
@@ -139,6 +139,7 @@ class Enforcer {
    */
   async set(entry, data) {
     try {
+
       const report = await this.#CCINT.audit();
       if (report.activated) this.#activated = true;
 
@@ -158,7 +159,7 @@ class Enforcer {
     try {
 
       if (this.cache[entry].method) {
-        await fs.rm(`${this.#overrides.path}/cache/${entry}.json`, {recursive: true, force: true});
+        await fs.rm(`${this.#overrides.path}/cache/storage/${entry}.json`, {recursive: true, force: true});
       }
 
       await this.#invalidate_vm(entry);
@@ -249,9 +250,9 @@ class Enforcer {
         await this.#foreign.set(entry, data);
         this.#foreign.cache.push(entry);
       } else {
-        await fs.writeFile(`${this.#overrides.path}/cache/${entry}.json`, JSON.stringify(data));
+        await fs.writeFile(`${this.#overrides.path}/cache/storage/${entry}.json`, JSON.stringify(data));
         this.cache[entry] = new Entry({
-          method,
+          method: method,
           ttl: this.#ttl
         })
       }
