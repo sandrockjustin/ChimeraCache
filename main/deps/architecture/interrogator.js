@@ -18,7 +18,7 @@ class Interrogator {
     const {caching = null, fallback = null} = options;
     const monitoring = fallback.monitoring;
 
-    this.#CCORC = new Oracle({monitoring});
+    this.#CCORC = new Oracle(monitoring);
     
     if (caching) this.#caching = caching;
     if (fallback) this.#fallback = fallback; // intended to be an object containing [system, process, chimera] objects as well as a protocol object {policy (native overrides like Orphan/Wayne/Foreign/Flex), recover (true/false), interval, delay}
@@ -118,8 +118,13 @@ class Interrogator {
       if (minor_violation) {
 
         this.#pending = true;
+        const start = Date.now();
         const report = await this.#CCORC.performance_monitoring(false);
         const {system = null, process = null, chimera = null} = this.#fallback.thresholds;
+
+        if (!report) {
+          throw new Error(`Failed to generate a performance report in #CCORC.`);
+        }
 
         const persistent_violation = (system.enabled && (report.system.usage >= system.min)) ||
         (process.enabled && (report.process.system_usage >= process.min)) ||

@@ -187,7 +187,7 @@ class Oracle {
             });
             collected++;
   
-            if (collected >= (samples - 1)) {
+            if (collected >= (this.#monitoring.samples - 1)) {
               clearInterval(this.#monitoring.subroutine);
               resolve();
             }
@@ -195,7 +195,7 @@ class Oracle {
             clearInterval(this.#monitoring.subroutine);
             reject(err);
           }
-        }, this.#monitoring.duration);
+        }, this.#monitoring.duration / (this.#monitoring.samples - 1));
       });
   
       const average = metrics.reduce((accum, curr) => {
