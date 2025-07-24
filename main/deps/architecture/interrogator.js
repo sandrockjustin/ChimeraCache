@@ -82,7 +82,7 @@ class Interrogator {
   async #diagnostics() {
 
     try {
-      const report = await this.#CCORC.performance_monitoring(true);
+      const tearline_report = await this.#CCORC.performance_monitoring(true);
       const {system = null, process = null, chimera = null} = this.#fallback.thresholds;
 
       /**
@@ -96,13 +96,13 @@ class Interrogator {
        * has a conflicting internal state of active. After the setTimeout(), diagnostics will execute again. If
        * the diagnostics return all clear, we begin recovering.
        */
-      if (this.#pending || !report) return false;
+      if (this.#pending || !tearline_report) return false;
 
 
-      const major_violation = (system.enabled && (report.system.usage >= system.max)) ||
-        (process.enabled && (report.process.system_usage >= process.max)) ||
-        ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.max)) ||
-        ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.max));
+      const major_violation = (system.enabled && (tearline_report.system.usage >= system.max)) ||
+        (process.enabled && (tearline_report.process.system_usage >= process.max)) ||
+        ((chimera.system && chimera.system.enabled) && (tearline_report.chimera.system_usage >= chimera.system.max)) ||
+        ((chimera.process && chimera.process.enabled) && (tearline_report.chimera.process_usage >= chimera.process.max));
 
       // if we are at or beyond max, signal immediately that we must activate and enforce fallback policy.
       if (major_violation) {
@@ -110,26 +110,27 @@ class Interrogator {
         return true;
       }
 
-      const minor_violation = (system.enabled && (report.system.usage >= system.min)) ||
-        (process.enabled && (report.process.system_usage >= process.min)) ||
-        ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.min)) ||
-        ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.min));
+      const minor_violation = (system.enabled && (tearline_report.system.usage >= system.min)) ||
+        (process.enabled && (tearline_report.process.system_usage >= process.min)) ||
+        ((chimera.system && chimera.system.enabled) && (tearline_report.chimera.system_usage >= chimera.system.min)) ||
+        ((chimera.process && chimera.process.enabled) && (tearline_report.chimera.process_usage >= chimera.process.min));
 
       if (minor_violation) {
+        console.log(tearline_report);
 
         this.#pending = true;
         const start = Date.now();
-        const report = await this.#CCORC.performance_monitoring(false);
+        const comprehensive_report = await this.#CCORC.performance_monitoring(false);
         const {system = null, process = null, chimera = null} = this.#fallback.thresholds;
 
-        if (!report) {
+        if (!comprehensive_report) {
           throw new Error(`Failed to generate a performance report in #CCORC.`);
         }
 
-        const persistent_violation = (system.enabled && (report.system.usage >= system.min)) ||
-        (process.enabled && (report.process.system_usage >= process.min)) ||
-        ((chimera.system && chimera.system.enabled) && (report.chimera.system_usage >= chimera.system.min)) ||
-        ((chimera.process && chimera.process.enabled) && (report.chimera.process_usage >= chimera.process.min));
+        const persistent_violation = (system.enabled && (comprehensive_report.system.usage >= system.min)) ||
+        (process.enabled && (comprehensive_report.process.system_usage >= process.min)) ||
+        ((chimera.system && chimera.system.enabled) && (comprehensive_report.chimera.system_usage >= chimera.system.min)) ||
+        ((chimera.process && chimera.process.enabled) && (comprehensive_report.chimera.process_usage >= chimera.process.min));
 
         if (persistent_violation) {
           this.#activated = true;
