@@ -58,7 +58,7 @@ class ChimeraCache {
         },
         ratio: {
           enabled: true,
-          max: 0,
+          max: 0.15,
           min: 0
         }
       },
@@ -71,11 +71,11 @@ class ChimeraCache {
     }
 
     const ttl = {
-      enabled: true,
+      enabled: false,
       extend_by: 0,
-      interval: 0,
-      max: 0,
-      min: 0
+      interval: 60000,
+      max: 480000,
+      min: 300000
     }
 
     const fallback = {
@@ -99,16 +99,16 @@ class ChimeraCache {
             min: 0.5
           },
           process: {
-            enabled: false,
-            max: 0,
-            min: 0
+            enabled: true,
+            max: 0.15,
+            min: 0.01
           }
         }
       },
       monitoring: {
-        duration: 30000,
+        duration: 10000,
         samples: 5,
-        delay: 30000
+        delay: 10000
       }
     };
 
@@ -136,6 +136,16 @@ class ChimeraCache {
     }
 
     return;
+  }
+
+  async invalidate(entry) {
+    try {
+      this.#CCENF.invalidate(sanitize(entry));
+      return null;
+    } catch (error) {
+      console.error(error);
+      return error;
+    }
   }
 
   async get(entry) {
