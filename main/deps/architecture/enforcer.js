@@ -143,7 +143,13 @@ class Enforcer {
   }
 
   /**
-   * 
+   * Creates a new Cache entry in either VM or NVM. If the entry passes all caching constraints, and the
+   * fallback protocol is not currently activated, then the entry will be stored in VM. If overflow is enabled
+   * and detected, then the new entry will be stored in NVM. If overflow is disabled, but caching constraints have
+   * detected a violation, then the item will not be cached. An underflow is never cached under any circumstances. 
+   * If the fallback protocol has been activated, all set() attempts will default to NVM until ChimeraCache detects
+   * a system recovery.
+   * has been activated, then the item will be cached in NVM.
    * @param {*} entry - The key under which a new Entry() should be instanced.
    * @param {*} data - The data to store in either VM / NVM.
    * @param {*} options - Optional TTL overrides object, if you wish for this particular entry to have a different TTL.
