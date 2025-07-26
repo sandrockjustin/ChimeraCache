@@ -5,8 +5,6 @@ const os = require('node:os');
  * them with insights into system performance, especially for the purposes of activating fallback 
  * policies and bytesize data constraints. The Oracle is imperfect, and can only give approximations
  * due to language constraints.
- * 
- * Sounds cool, but fuck this thing. It's the reason I am on V6 right now. [2025-07-21]
  */
 class Oracle {
   /**
