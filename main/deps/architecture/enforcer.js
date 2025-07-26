@@ -146,13 +146,20 @@ class Enforcer {
    * 
    * @param {*} entry - The key under which a new Entry() should be instanced.
    * @param {*} data - The data to store in either VM / NVM.
+   * @param {*} options - Optional TTL overrides object, if you wish for this particular entry to have a different TTL.
    * @returns 
    */
-  async set(entry, data) {
+  async set(entry, data, options = {}) {
     try {
+
+      // If it already exists, don't attempt to set it again. Developer should use invalidate() if they want to set() again.
+      if (this.cache[entry]) {
+        return null;
+      }
+
       const report = await this.#CCINT.audit();
       if (report.activated) this.#activated = true;
-      await this.#set_vm(entry, data);
+      await this.#set_vm(entry, data, options);
       return true;
     } catch (error) {
       console.error(error);
@@ -203,8 +210,9 @@ class Enforcer {
    * the Interrogator will automatically invalidate the entry on behalf of the Enforcer.
    * @param {*} entry - The key under which a new Entry() should be instanced.
    * @param {*} data - The data to store in either VM / NVM.
+   * @param {*} options - Optional TTL overrides object, if you wish for this particular entry to have a different TTL.
    */
-  async #set_vm(entry, data) {
+  async #set_vm(entry, data, options = {}) {
     try {
       // if fallback protocol has not been activated
       if (!this.#activated) {
@@ -215,8 +223,8 @@ class Enforcer {
             this.cache[entry] = new Entry({
             data, ttl: {
               enabled: this.#ttl.enabled,
-              max: this.#ttl.max,
-              min: this.#ttl.min,
+              max: options.max ? options.max : this.#ttl.max,
+              min: options.min ? options.min : this.#ttl.min ,
               extend_by: this.#ttl.extend_by,
             }
           })},
@@ -241,7 +249,7 @@ class Enforcer {
         return true;
       // if fallback protocol has been activated
       } else {
-        this.#set_nvm(entry, data, 'fallback');
+        this.#set_nvm(entry, data, options, 'fallback');
         return true;
       }
 
@@ -255,12 +263,13 @@ class Enforcer {
    * Attempts to create a new Entry() according to the method ('fallback' or 'overflow') defined. If
    * a foreign has been enabled, then the contents will be offloaded to a foreign management system
    * that has been defined by the end-user. Otherwise, the data is written to a JSON in NVM.
-   * @param {*} entry 
-   * @param {*} data 
-   * @param {*} method 
+   * @param {*} entry - The key under which a new Entry() should be instanced.
+   * @param {*} data - The data to store in NVM; a lightweight Entry() will be instanced in VM for the purposes of invalidation.
+   * @param {*} options - Optional TTL overrides object, if you wish for this particular entry to have a different TTL.
+   * @param {*} method - Used by ChimeraCache internals to describe why this item is stored in NVM rather than VM.
    * @returns 
    */
-  async #set_nvm(entry, data, method) {
+  async #set_nvm(entry, data, options = {}, method) {
     try {
 
       if (this.#foreign && this.#foreign.enabled) {
@@ -271,7 +280,12 @@ class Enforcer {
         await fs.writeFile(`${this.#overrides.path}/cache/storage/${entry}.json`, JSON.stringify(data));
         this.cache[entry] = new Entry({
           method: method,
-          ttl: this.#ttl
+          ttl: {
+              enabled: this.#ttl.enabled,
+              max: options.max ? options.max : this.#ttl.max,
+              min: options.min ? options.min : this.#ttl.min ,
+              extend_by: this.#ttl.extend_by,
+          }
         })
         return true;
       }
